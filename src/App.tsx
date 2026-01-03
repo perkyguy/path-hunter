@@ -59,6 +59,7 @@ export default function App() {
   const [drawingPath, setDrawingPath] = useState<Cell[] | null>(null);
   const [hintCells, setHintCells] = useState<Set<string>>(new Set());
   const [highlightNumber, setHighlightNumber] = useState<number | null>(null);
+  const [hintedKey, setHintedKey] = useState<string | null>(null);
   const [showHelp, setShowHelp] = useState(false);
   const [dailyStats, setDailyStats] = useState(loadDailyStats());
   const gridRef = useRef<HTMLDivElement | null>(null);
@@ -72,6 +73,7 @@ export default function App() {
     setPlayer(saved ?? buildEmptyPlayerState(nextSeed, difficulty));
     setHintCells(new Set());
     setHighlightNumber(null);
+    setHintedKey(null);
     setDrawingPath(null);
   }, [mode, difficulty]);
 
@@ -87,6 +89,7 @@ export default function App() {
             return prev;
           }
           const shouldCountMove = drawingPath.length < prev.path.length;
+          setHintedKey(null);
           return {
             ...prev,
             path: drawingPath,
@@ -142,6 +145,7 @@ export default function App() {
       setPlayer(buildEmptyPlayerState(seed, difficulty));
       setHintCells(new Set());
       setHighlightNumber(null);
+      setHintedKey(null);
       setDrawingPath(null);
       return;
     }
@@ -152,6 +156,7 @@ export default function App() {
     setPlayer(buildEmptyPlayerState(nextSeed, difficulty));
     setHintCells(new Set());
     setHighlightNumber(null);
+    setHintedKey(null);
     setDrawingPath(null);
   };
 
@@ -163,6 +168,7 @@ export default function App() {
     }));
     setHintCells(new Set());
     setHighlightNumber(null);
+    setHintedKey(null);
     setDrawingPath(null);
   };
 
@@ -223,16 +229,28 @@ export default function App() {
 
   const handleHint = () => {
     if (hintsLeft <= 0) return;
-    const nextExpected = getNextExpectedNumber(player.path, puzzle) ?? 1;
-    setHighlightNumber(nextExpected <= puzzle.waypointCount ? nextExpected : null);
-    const nextCell = puzzle.path[player.path.length];
+    let mismatchIndex = player.path.length;
+    for (let i = 0; i < player.path.length; i += 1) {
+      if (cellKey(player.path[i]) !== cellKey(puzzle.path[i])) {
+        mismatchIndex = i;
+        break;
+      }
+    }
+    const nextIndex = Math.min(mismatchIndex, puzzle.path.length - 1);
+    const nextPath = puzzle.path.slice(0, nextIndex + 1);
+    const nextCell = puzzle.path[nextIndex];
     if (nextCell) {
       setHintCells((prev) => new Set(prev).add(cellKey(nextCell)));
+      setHintedKey(cellKey(nextCell));
     }
+    const nextExpected = getNextExpectedNumber(nextPath, puzzle) ?? 1;
+    setHighlightNumber(nextExpected <= puzzle.waypointCount ? nextExpected : null);
 
     setPlayer((prev) => ({
       ...prev,
-      hintsUsed: prev.hintsUsed + 1
+      path: nextPath,
+      hintsUsed: prev.hintsUsed + 1,
+      moves: nextPath.length < prev.path.length ? prev.moves + 1 : prev.moves
     }));
     buzz(12);
   };
@@ -265,6 +283,7 @@ export default function App() {
         const highlight = highlightNumber !== null && number === highlightNumber;
         const isHead = index === activePath.length - 1 && activePath.length > 0;
         const isTail = index === 0 && activePath.length > 0;
+        const isHintedStep = hintedKey === key;
         const prevCell = index !== undefined && index > 0 ? activePath[index - 1] : null;
         const nextCell =
           index !== undefined && index < activePath.length - 1 ? activePath[index + 1] : null;
@@ -305,7 +324,7 @@ export default function App() {
                 {connectsDown && <span className="path-link down" />}
                 {connectsLeft && <span className="path-link left" />}
                 {connectsRight && <span className="path-link right" />}
-                <span className="path-node" />
+                <span className={`path-node ${isHintedStep ? "hinted-step" : ""}`} />
               </>
             )}
             {number !== null && <span className="number">{number}</span>}
