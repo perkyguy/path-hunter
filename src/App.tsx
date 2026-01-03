@@ -60,6 +60,7 @@ export default function App() {
     const saved = loadPlayerState(stateKey("daily", "easy", todaySeed("easy")));
     return saved ?? buildEmptyPlayerState(todaySeed("easy"), "easy");
   });
+  const [saveKey, setSaveKey] = useState(() => stateKey("daily", "easy", todaySeed("easy")));
   const [drawingPath, setDrawingPath] = useState<Cell[] | null>(null);
   const [hintCells, setHintCells] = useState<Set<string>>(new Set());
   const [highlightNumber, setHighlightNumber] = useState<number | null>(null);
@@ -72,6 +73,7 @@ export default function App() {
     const nextSeed = mode === "daily" ? todaySeed(difficulty) : randomSeed();
     const nextPuzzle = generatePuzzle(nextSeed, GRID_SIZE, difficulty);
     const saved = loadPlayerState(stateKey(mode, difficulty, nextSeed));
+    setSaveKey(stateKey(mode, difficulty, nextSeed));
     setPuzzle(nextPuzzle);
     setSeed(nextSeed);
     const nextPlayer = saved ?? buildEmptyPlayerState(nextSeed, difficulty);
@@ -91,8 +93,8 @@ export default function App() {
   }, [mode, difficulty]);
 
   useEffect(() => {
-    savePlayerState(stateKey(mode, difficulty, seed), player);
-  }, [mode, difficulty, seed, player]);
+    savePlayerState(saveKey, player);
+  }, [saveKey, player]);
 
   useEffect(() => {
     const handlePointerUp = () => {
@@ -213,6 +215,7 @@ export default function App() {
     const nextSeed = randomSeed();
     const nextPuzzle = generatePuzzle(nextSeed, GRID_SIZE, difficulty);
     setSeed(nextSeed);
+    setSaveKey(stateKey(mode, difficulty, nextSeed));
     setPuzzle(nextPuzzle);
     const nextPlayer = buildEmptyPlayerState(nextSeed, difficulty);
     setPlayer(nextPlayer);
@@ -225,6 +228,9 @@ export default function App() {
   const handleDifficultyChange = (level: Difficulty) => {
     setPlayer((prev) => ({
       ...prev,
+      elapsedSeconds: prev.timerStartMs === null
+        ? prev.elapsedSeconds
+        : Math.floor((Date.now() - prev.timerStartMs) / 1000),
       timerStartMs: null,
       isPaused: true
     }));
