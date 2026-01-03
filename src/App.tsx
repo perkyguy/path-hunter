@@ -28,7 +28,9 @@ const buildEmptyPlayerState = (seedValue: string, difficultyValue: Difficulty): 
   difficulty: difficultyValue,
   path: [],
   moves: 0,
-  hintsUsed: 0
+  hintsUsed: 0,
+  elapsedSeconds: 0,
+  timerStartMs: Date.now()
 });
 
 const stateKey = (mode: Mode, difficulty: Difficulty, seed: string) =>
@@ -64,6 +66,7 @@ export default function App() {
   const [showHelp, setShowHelp] = useState(false);
   const [dailyStats, setDailyStats] = useState(loadDailyStats());
   const gridRef = useRef<HTMLDivElement | null>(null);
+  const timerStartRef = useRef<number | null>(null);
 
   useEffect(() => {
     const nextSeed = mode === "daily" ? todaySeed(difficulty) : randomSeed();
@@ -71,11 +74,13 @@ export default function App() {
     const saved = loadPlayerState(stateKey(mode, difficulty, nextSeed));
     setPuzzle(nextPuzzle);
     setSeed(nextSeed);
-    setPlayer(saved ?? buildEmptyPlayerState(nextSeed, difficulty));
+    const nextPlayer = saved ?? buildEmptyPlayerState(nextSeed, difficulty);
+    setPlayer(nextPlayer);
     setHintCells(new Set());
     setHighlightNumber(null);
     setHintedKey(null);
     setDrawingPath(null);
+    timerStartRef.current = nextPlayer.timerStartMs ?? Date.now();
   }, [mode, difficulty]);
 
   useEffect(() => {
@@ -140,37 +145,63 @@ export default function App() {
     saveDailyStats(nextStats);
   }, [dailyStats, mode, solved]);
 
+  useEffect(() => {
+    if (timerStartRef.current === null) {
+      timerStartRef.current = Date.now();
+    }
+    if (solved) {
+      setPlayer((prev) => ({
+        ...prev,
+        elapsedSeconds: Math.floor((Date.now() - (timerStartRef.current ?? Date.now())) / 1000)
+      }));
+      return;
+    }
+    const interval = window.setInterval(() => {
+      if (timerStartRef.current === null) return;
+      const elapsed = Math.floor((Date.now() - timerStartRef.current) / 1000);
+      setPlayer((prev) => (prev.elapsedSeconds === elapsed ? prev : { ...prev, elapsedSeconds: elapsed }));
+    }, 1000);
+    return () => window.clearInterval(interval);
+  }, [solved, puzzle.seed, difficulty, mode]);
+
   const startNewPuzzle = () => {
     if (mode === "daily") {
       clearPlayerState(stateKey(mode, difficulty, seed));
-      setPlayer(buildEmptyPlayerState(seed, difficulty));
+      const nextPlayer = buildEmptyPlayerState(seed, difficulty);
+      setPlayer(nextPlayer);
       setHintCells(new Set());
       setHighlightNumber(null);
       setHintedKey(null);
       setDrawingPath(null);
+      timerStartRef.current = nextPlayer.timerStartMs;
       return;
     }
     const nextSeed = randomSeed();
     const nextPuzzle = generatePuzzle(nextSeed, GRID_SIZE, difficulty);
     setSeed(nextSeed);
     setPuzzle(nextPuzzle);
-    setPlayer(buildEmptyPlayerState(nextSeed, difficulty));
+    const nextPlayer = buildEmptyPlayerState(nextSeed, difficulty);
+    setPlayer(nextPlayer);
     setHintCells(new Set());
     setHighlightNumber(null);
     setHintedKey(null);
     setDrawingPath(null);
+    timerStartRef.current = nextPlayer.timerStartMs;
   };
 
   const resetPuzzle = () => {
     setPlayer((prev) => ({
       ...prev,
       path: [],
-      moves: 0
+      moves: 0,
+      elapsedSeconds: 0,
+      timerStartMs: Date.now()
     }));
     setHintCells(new Set());
     setHighlightNumber(null);
     setHintedKey(null);
     setDrawingPath(null);
+    timerStartRef.current = Date.now();
   };
 
   const handlePointerDown = (cell: Cell) => {
@@ -258,7 +289,9 @@ export default function App() {
 
   const handleShare = async () => {
     const tag = mode === "daily" ? `Daily ${todayDate()}` : "Random";
-    const text = `Path Hunter ${tag} • Moves ${player.moves} • Hints ${player.hintsUsed} • ${solved ? "Solved" : "In progress"}`;
+    const minutes = Math.floor(player.elapsedSeconds / 60);
+    const seconds = String(player.elapsedSeconds % 60).padStart(2, "0");
+    const text = `Path Hunter ${tag} • Time ${minutes}:${seconds} • Moves ${player.moves} • Hints ${player.hintsUsed} • ${solved ? "Solved" : "In progress"}`;
     try {
       await navigator.clipboard.writeText(text);
       buzz(15);
@@ -351,6 +384,7 @@ export default function App() {
         </div>
         <div className="stats">
           <div>Moves: {player.moves}</div>
+          <div>Time: {Math.floor(player.elapsedSeconds / 60)}:{String(player.elapsedSeconds % 60).padStart(2, "0")}</div>
           <div>Hints: {player.hintsUsed}/{HINTS_PER_PUZZLE}</div>
           {mode === "daily" && <div>Streak: {dailyStats.streak}</div>}
         </div>

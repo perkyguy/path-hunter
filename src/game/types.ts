@@ -27,6 +27,8 @@ export type PlayerState = {
   path: Cell[];
   moves: number;
   hintsUsed: number;
+  elapsedSeconds: number;
+  timerStartMs: number | null;
 };
 
 export type DailyStats = {

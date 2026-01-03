@@ -8,7 +8,11 @@ export const loadPlayerState = (key: string): PlayerState | null => {
   if (!raw) return null;
   try {
     const parsed = JSON.parse(raw) as PlayerState;
-    if (!Array.isArray(parsed.path) || typeof parsed.seed !== "string") {
+    if (
+      !Array.isArray(parsed.path) ||
+      typeof parsed.seed !== "string" ||
+      typeof parsed.elapsedSeconds !== "number"
+    ) {
       return null;
     }
     return parsed;
