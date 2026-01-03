@@ -30,7 +30,8 @@ const buildEmptyPlayerState = (seedValue: string, difficultyValue: Difficulty): 
   moves: 0,
   hintsUsed: 0,
   elapsedSeconds: 0,
-  timerStartMs: Date.now()
+  timerStartMs: Date.now(),
+  isPaused: false
 });
 
 const stateKey = (mode: Mode, difficulty: Difficulty, seed: string) =>
@@ -66,7 +67,6 @@ export default function App() {
   const [showHelp, setShowHelp] = useState(false);
   const [dailyStats, setDailyStats] = useState(loadDailyStats());
   const gridRef = useRef<HTMLDivElement | null>(null);
-  const timerStartRef = useRef<number | null>(null);
 
   useEffect(() => {
     const nextSeed = mode === "daily" ? todaySeed(difficulty) : randomSeed();
@@ -75,12 +75,14 @@ export default function App() {
     setPuzzle(nextPuzzle);
     setSeed(nextSeed);
     const nextPlayer = saved ?? buildEmptyPlayerState(nextSeed, difficulty);
-    setPlayer(nextPlayer);
+    const adjustedPlayer = nextPlayer.isPaused
+      ? { ...nextPlayer, timerStartMs: null }
+      : nextPlayer;
+    setPlayer(adjustedPlayer);
     setHintCells(new Set());
     setHighlightNumber(null);
     setHintedKey(null);
     setDrawingPath(null);
-    timerStartRef.current = nextPlayer.timerStartMs ?? Date.now();
   }, [mode, difficulty]);
 
   useEffect(() => {
@@ -146,23 +148,51 @@ export default function App() {
   }, [dailyStats, mode, solved]);
 
   useEffect(() => {
-    if (timerStartRef.current === null) {
-      timerStartRef.current = Date.now();
-    }
-    if (solved) {
-      setPlayer((prev) => ({
-        ...prev,
-        elapsedSeconds: Math.floor((Date.now() - (timerStartRef.current ?? Date.now())) / 1000)
-      }));
-      return;
-    }
+    if (solved) return;
+    if (player.isPaused) return;
+    if (player.timerStartMs === null) return;
     const interval = window.setInterval(() => {
-      if (timerStartRef.current === null) return;
-      const elapsed = Math.floor((Date.now() - timerStartRef.current) / 1000);
-      setPlayer((prev) => (prev.elapsedSeconds === elapsed ? prev : { ...prev, elapsedSeconds: elapsed }));
+      setPlayer((prev) => {
+        if (prev.isPaused || prev.timerStartMs === null) return prev;
+        const elapsed = Math.floor((Date.now() - prev.timerStartMs) / 1000);
+        return prev.elapsedSeconds === elapsed ? prev : { ...prev, elapsedSeconds: elapsed };
+      });
     }, 1000);
     return () => window.clearInterval(interval);
-  }, [solved, puzzle.seed, difficulty, mode]);
+  }, [solved, player.isPaused, player.timerStartMs]);
+
+  useEffect(() => {
+    if (!solved) return;
+    setPlayer((prev) => {
+      if (prev.timerStartMs === null) return prev;
+      const elapsed = Math.floor((Date.now() - prev.timerStartMs) / 1000);
+      return {
+        ...prev,
+        elapsedSeconds: elapsed,
+        timerStartMs: null,
+        isPaused: false
+      };
+    });
+  }, [solved]);
+
+  useEffect(() => {
+    const handleVisibility = () => {
+      if (!document.hidden) return;
+      if (solved) return;
+      setPlayer((prev) => {
+        if (prev.isPaused || prev.timerStartMs === null) return prev;
+        const elapsed = Math.floor((Date.now() - prev.timerStartMs) / 1000);
+        return {
+          ...prev,
+          elapsedSeconds: elapsed,
+          timerStartMs: null,
+          isPaused: true
+        };
+      });
+    };
+    document.addEventListener("visibilitychange", handleVisibility);
+    return () => document.removeEventListener("visibilitychange", handleVisibility);
+  }, [solved]);
 
   const startNewPuzzle = () => {
     if (mode === "daily") {
@@ -173,7 +203,6 @@ export default function App() {
       setHighlightNumber(null);
       setHintedKey(null);
       setDrawingPath(null);
-      timerStartRef.current = nextPlayer.timerStartMs;
       return;
     }
     const nextSeed = randomSeed();
@@ -186,7 +215,6 @@ export default function App() {
     setHighlightNumber(null);
     setHintedKey(null);
     setDrawingPath(null);
-    timerStartRef.current = nextPlayer.timerStartMs;
   };
 
   const resetPuzzle = () => {
@@ -195,13 +223,21 @@ export default function App() {
       path: [],
       moves: 0,
       elapsedSeconds: 0,
-      timerStartMs: Date.now()
+      timerStartMs: Date.now(),
+      isPaused: false
     }));
     setHintCells(new Set());
     setHighlightNumber(null);
     setHintedKey(null);
     setDrawingPath(null);
-    timerStartRef.current = Date.now();
+  };
+
+  const resumeTimer = () => {
+    setPlayer((prev) => ({
+      ...prev,
+      timerStartMs: Date.now() - prev.elapsedSeconds * 1000,
+      isPaused: false
+    }));
   };
 
   const handlePointerDown = (cell: Cell) => {
@@ -432,7 +468,7 @@ export default function App() {
 
       <main className="board-wrap">
         <div
-          className={`board ${solved ? "solved" : ""}`}
+          className={`board ${solved ? "solved" : ""} ${player.isPaused && !solved ? "paused" : ""}`}
           ref={gridRef}
           onPointerMove={handlePointerMove}
           style={{
@@ -441,6 +477,11 @@ export default function App() {
         >
           {renderGrid()}
         </div>
+        {player.isPaused && !solved && (
+          <button type="button" className="pause-overlay" onClick={resumeTimer}>
+            Tap to resume timer
+          </button>
+        )}
         {solved && (
           <div className="solved-banner">Trail complete! Nice work.</div>
         )}

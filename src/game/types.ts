@@ -29,6 +29,7 @@ export type PlayerState = {
   hintsUsed: number;
   elapsedSeconds: number;
   timerStartMs: number | null;
+  isPaused: boolean;
 };
 
 export type DailyStats = {

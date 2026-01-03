@@ -137,6 +137,25 @@ button.active {
   touch-action: none;
 }
 
+.board.paused {
+  filter: blur(2px) saturate(0.9);
+}
+
+.pause-overlay {
+  position: absolute;
+  inset: 0;
+  border: none;
+  border-radius: 18px;
+  background: rgba(20, 18, 14, 0.6);
+  color: var(--text);
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  display: grid;
+  place-items: center;
+  backdrop-filter: blur(4px);
+}
+
 .cell {
   background: #2a251d;
   border-radius: 12px;

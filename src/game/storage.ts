@@ -11,7 +11,9 @@ export const loadPlayerState = (key: string): PlayerState | null => {
     if (
       !Array.isArray(parsed.path) ||
       typeof parsed.seed !== "string" ||
-      typeof parsed.elapsedSeconds !== "number"
+      typeof parsed.elapsedSeconds !== "number" ||
+      (parsed.timerStartMs !== null && typeof parsed.timerStartMs !== "number") ||
+      typeof parsed.isPaused !== "boolean"
     ) {
       return null;
     }
