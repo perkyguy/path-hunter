@@ -1,5 +1,11 @@
-const CACHE_NAME = "path-hunter-v1";
-const CORE_ASSETS = ["/", "/index.html", "/manifest.json", "/icon.svg"];
+const CACHE_NAME = "path-hunter-v2";
+const basePath = self.location.pathname.replace(/\/sw\.js$/, "/");
+const CORE_ASSETS = [
+  basePath,
+  `${basePath}index.html`,
+  `${basePath}manifest.json`,
+  `${basePath}icon.svg`
+];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
