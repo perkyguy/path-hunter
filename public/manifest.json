@@ -1,0 +1,16 @@
+{
+  "name": "Path Hunter",
+  "short_name": "PathHunter",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#1f1c17",
+  "theme_color": "#2d2a24",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}
