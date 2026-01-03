@@ -101,14 +101,23 @@ const pickWaypointIndices = (
   minGap: number,
   rng: PRNG
 ): number[] => {
-  if (count < 2) return [0];
-  const gaps = randomSplit(pathLength - 1, count - 1, minGap, rng);
+  if (count <= 1) return [0];
+  const total = pathLength - 1;
+  const interiorCount = count - 2;
+  if (interiorCount <= 0) return [0, total];
+
+  const maxGap = Math.max(1, Math.floor(total / (interiorCount + 1)));
+  const effectiveGap = Math.min(minGap, maxGap);
+  const gaps = randomSplit(total, interiorCount + 1, effectiveGap, rng);
   const indices = [0];
   let cursor = 0;
-  for (const gap of gaps) {
-    cursor += gap;
-    indices.push(cursor);
+  for (let i = 0; i < gaps.length; i += 1) {
+    cursor += gaps[i];
+    if (i < gaps.length - 1) {
+      indices.push(cursor);
+    }
   }
+  indices.push(total);
   return indices;
 };
 

@@ -65,6 +65,8 @@ export const validatePath = (path: Cell[], puzzle: Puzzle): boolean => {
 export const isSolved = (path: Cell[], puzzle: Puzzle): boolean => {
   if (path.length !== puzzle.size * puzzle.size) return false;
   if (!validatePath(path, puzzle)) return false;
+  const lastKey = cellKey(path[path.length - 1]);
+  if (puzzle.waypointMap.get(lastKey) !== puzzle.waypointCount) return false;
   const nextExpected = getNextExpectedNumber(path, puzzle);
   return nextExpected === puzzle.waypointCount + 1;
 };

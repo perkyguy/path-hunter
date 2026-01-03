@@ -13,6 +13,9 @@ describe("generatePuzzle", () => {
         expect(puzzle.waypoints).toHaveLength(puzzle.waypointCount);
         expect(puzzle.waypoints[0].number).toBe(1);
         expect(puzzle.waypoints[puzzle.waypoints.length - 1].number).toBe(puzzle.waypointCount);
+        expect(puzzle.waypoints[puzzle.waypoints.length - 1].cell).toEqual(
+          puzzle.path[puzzle.path.length - 1]
+        );
       }
     }
   });
