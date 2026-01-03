@@ -13,7 +13,8 @@ import { canExtendPath, getNextExpectedNumber, isAdjacent, isSolved } from "./ga
 const GRID_SIZE = 6;
 const HINTS_PER_PUZZLE = 3;
 
-const todaySeed = () => new Date().toISOString().slice(0, 10);
+const todayDate = () => new Date().toISOString().slice(0, 10);
+const todaySeed = (difficulty: Difficulty) => `${todayDate()}-${difficulty}`;
 
 const randomSeed = () => {
   if ("crypto" in window && "randomUUID" in crypto) {
@@ -50,11 +51,11 @@ const samePath = (a: Cell[], b: Cell[]) => {
 export default function App() {
   const [mode, setMode] = useState<Mode>("daily");
   const [difficulty, setDifficulty] = useState<Difficulty>("easy");
-  const [seed, setSeed] = useState<string>(todaySeed());
+  const [seed, setSeed] = useState<string>(todaySeed("easy"));
   const [puzzle, setPuzzle] = useState(() => generatePuzzle(seed, GRID_SIZE, difficulty));
   const [player, setPlayer] = useState<PlayerState>(() => {
-    const saved = loadPlayerState(stateKey("daily", "easy", todaySeed()));
-    return saved ?? buildEmptyPlayerState(todaySeed(), "easy");
+    const saved = loadPlayerState(stateKey("daily", "easy", todaySeed("easy")));
+    return saved ?? buildEmptyPlayerState(todaySeed("easy"), "easy");
   });
   const [drawingPath, setDrawingPath] = useState<Cell[] | null>(null);
   const [hintCells, setHintCells] = useState<Set<string>>(new Set());
@@ -65,7 +66,7 @@ export default function App() {
   const gridRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
-    const nextSeed = mode === "daily" ? todaySeed() : randomSeed();
+    const nextSeed = mode === "daily" ? todaySeed(difficulty) : randomSeed();
     const nextPuzzle = generatePuzzle(nextSeed, GRID_SIZE, difficulty);
     const saved = loadPlayerState(stateKey(mode, difficulty, nextSeed));
     setPuzzle(nextPuzzle);
@@ -126,7 +127,7 @@ export default function App() {
 
   useEffect(() => {
     if (!solved || mode !== "daily") return;
-    const today = todaySeed();
+    const today = todayDate();
     if (dailyStats.lastSolvedDate === today) return;
 
     const yesterday = new Date();
@@ -256,7 +257,7 @@ export default function App() {
   };
 
   const handleShare = async () => {
-    const tag = mode === "daily" ? `Daily ${todaySeed()}` : "Random";
+    const tag = mode === "daily" ? `Daily ${todayDate()}` : "Random";
     const text = `Path Hunter ${tag} • Moves ${player.moves} • Hints ${player.hintsUsed} • ${solved ? "Solved" : "In progress"}`;
     try {
       await navigator.clipboard.writeText(text);
@@ -344,7 +345,7 @@ export default function App() {
           <div>
             <div className="title">Path Hunter</div>
             <div className="subtitle">
-              {mode === "daily" ? `Daily ${todaySeed()}` : "Random"} · {difficulty}
+              {mode === "daily" ? `Daily ${todayDate()}` : "Random"} · {difficulty}
             </div>
           </div>
         </div>
