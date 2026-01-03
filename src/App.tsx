@@ -75,9 +75,14 @@ export default function App() {
     setPuzzle(nextPuzzle);
     setSeed(nextSeed);
     const nextPlayer = saved ?? buildEmptyPlayerState(nextSeed, difficulty);
-    const adjustedPlayer = nextPlayer.isPaused
-      ? { ...nextPlayer, timerStartMs: null }
-      : nextPlayer;
+    const isComplete = isSolved(nextPlayer.path, nextPuzzle);
+    let adjustedPlayer = nextPlayer;
+    if (!nextPlayer.isPaused && nextPlayer.timerStartMs === null && !isComplete) {
+      adjustedPlayer = {
+        ...nextPlayer,
+        timerStartMs: Date.now() - nextPlayer.elapsedSeconds * 1000
+      };
+    }
     setPlayer(adjustedPlayer);
     setHintCells(new Set());
     setHighlightNumber(null);
