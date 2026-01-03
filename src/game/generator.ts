@@ -7,20 +7,57 @@ const difficultyConfig: Record<Difficulty, { waypoints: number; minGap: number }
   hard: { waypoints: 10, minGap: 2 }
 };
 
-const snakePath = (size: number): Cell[] => {
-  const cells: Cell[] = [];
-  for (let row = 0; row < size; row += 1) {
-    if (row % 2 === 0) {
-      for (let col = 0; col < size; col += 1) {
-        cells.push({ row, col });
+const neighborsOf = (cell: Cell, size: number): Cell[] => {
+  const deltas = [
+    { row: -1, col: 0 },
+    { row: 1, col: 0 },
+    { row: 0, col: -1 },
+    { row: 0, col: 1 }
+  ];
+  return deltas
+    .map((delta) => ({ row: cell.row + delta.row, col: cell.col + delta.col }))
+    .filter((next) => next.row >= 0 && next.row < size && next.col >= 0 && next.col < size);
+};
+
+const generateHamiltonianPath = (size: number, rng: PRNG): Cell[] => {
+  const total = size * size;
+  const maxAttempts = 200;
+
+  for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+    const start = { row: rng.int(size), col: rng.int(size) };
+    const path: Cell[] = [start];
+    const visited = new Set<string>([cellKey(start)]);
+
+    const step = (): boolean => {
+      if (path.length === total) return true;
+      const current = path[path.length - 1];
+      const candidates = neighborsOf(current, size).filter(
+        (cell) => !visited.has(cellKey(cell))
+      );
+
+      const ordered = candidates
+        .map((cell) => ({
+          cell,
+          degree: neighborsOf(cell, size).filter((next) => !visited.has(cellKey(next))).length
+        }))
+        .sort((a, b) => (a.degree - b.degree) || (rng.next() - 0.5));
+
+      for (const { cell } of ordered) {
+        visited.add(cellKey(cell));
+        path.push(cell);
+        if (step()) return true;
+        path.pop();
+        visited.delete(cellKey(cell));
       }
-    } else {
-      for (let col = size - 1; col >= 0; col -= 1) {
-        cells.push({ row, col });
-      }
+      return false;
+    };
+
+    if (step()) {
+      return path;
     }
   }
-  return cells;
+
+  throw new Error("Unable to generate Hamiltonian path");
 };
 
 const rotateCell = (cell: Cell, size: number, rotation: number): Cell => {
@@ -82,7 +119,7 @@ export const generatePuzzle = (
 ): Puzzle => {
   const rng = createPrng(seed);
   const config = difficultyConfig[difficulty];
-  const base = transformPath(snakePath(size), size, rng);
+  const base = transformPath(generateHamiltonianPath(size, rng), size, rng);
   const path = rng.next() > 0.5 ? base.slice().reverse() : base;
   const indices = pickWaypointIndices(path.length, config.waypoints, config.minGap, rng);
   const waypoints: Waypoint[] = indices.map((index, idx) => ({
