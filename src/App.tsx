@@ -217,6 +217,15 @@ export default function App() {
     setDrawingPath(null);
   };
 
+  const handleDifficultyChange = (level: Difficulty) => {
+    setPlayer((prev) => ({
+      ...prev,
+      timerStartMs: null,
+      isPaused: true
+    }));
+    setDifficulty(level);
+  };
+
   const resetPuzzle = () => {
     setPlayer((prev) => ({
       ...prev,
@@ -449,7 +458,7 @@ export default function App() {
               key={level}
               type="button"
               className={difficulty === level ? "active" : ""}
-              onClick={() => setDifficulty(level)}
+              onClick={() => handleDifficultyChange(level)}
             >
               {level}
             </button>
