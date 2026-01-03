@@ -150,7 +150,7 @@ button.active {
 }
 
 .cell.filled {
-  box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.08);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06);
 }
 
 .cell.head {
@@ -163,6 +163,53 @@ button.active {
 
 .cell.highlight {
   box-shadow: 0 0 0 3px rgba(255, 179, 71, 0.7);
+}
+
+.path-node {
+  position: absolute;
+  inset: 20%;
+  border-radius: 14px;
+  background: var(--path-color, #ffb347);
+  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.25);
+  pointer-events: none;
+}
+
+.path-link {
+  position: absolute;
+  background: var(--path-color, #ffb347);
+  pointer-events: none;
+}
+
+.path-link.up {
+  width: 36%;
+  height: 42%;
+  left: 32%;
+  top: -4%;
+  border-radius: 999px;
+}
+
+.path-link.down {
+  width: 36%;
+  height: 42%;
+  left: 32%;
+  bottom: -4%;
+  border-radius: 999px;
+}
+
+.path-link.left {
+  width: 42%;
+  height: 36%;
+  left: -4%;
+  top: 32%;
+  border-radius: 999px;
+}
+
+.path-link.right {
+  width: 42%;
+  height: 36%;
+  right: -4%;
+  top: 32%;
+  border-radius: 999px;
 }
 
 .number {

@@ -265,6 +265,22 @@ export default function App() {
         const highlight = highlightNumber !== null && number === highlightNumber;
         const isHead = index === activePath.length - 1 && activePath.length > 0;
         const isTail = index === 0 && activePath.length > 0;
+        const prevCell = index !== undefined && index > 0 ? activePath[index - 1] : null;
+        const nextCell =
+          index !== undefined && index < activePath.length - 1 ? activePath[index + 1] : null;
+        const connectsUp =
+          (prevCell && prevCell.row === row - 1 && prevCell.col === col) ||
+          (nextCell && nextCell.row === row - 1 && nextCell.col === col);
+        const connectsDown =
+          (prevCell && prevCell.row === row + 1 && prevCell.col === col) ||
+          (nextCell && nextCell.row === row + 1 && nextCell.col === col);
+        const connectsLeft =
+          (prevCell && prevCell.row === row && prevCell.col === col - 1) ||
+          (nextCell && nextCell.row === row && nextCell.col === col - 1);
+        const connectsRight =
+          (prevCell && prevCell.row === row && prevCell.col === col + 1) ||
+          (nextCell && nextCell.row === row && nextCell.col === col + 1);
+        const pathColor = `hsl(28 90% ${45 + progress * 20}%)`;
 
         cells.push(
           <button
@@ -272,9 +288,7 @@ export default function App() {
             type="button"
             className={`cell ${number !== null ? "endpoint" : ""} ${occupied ? "filled" : ""} ${highlight ? "highlight" : ""} ${isHead ? "head" : ""} ${isTail ? "tail" : ""}`}
             style={{
-              background: occupied
-                ? `linear-gradient(135deg, hsl(28 90% ${45 + progress * 20}%), hsl(6 85% ${42 + progress * 20}%))`
-                : undefined
+              ["--path-color" as never]: pathColor
             }}
             data-cell="true"
             data-row={row}
@@ -285,6 +299,15 @@ export default function App() {
             }}
             onPointerEnter={() => handlePointerEnter(cell)}
           >
+            {occupied && (
+              <>
+                {connectsUp && <span className="path-link up" />}
+                {connectsDown && <span className="path-link down" />}
+                {connectsLeft && <span className="path-link left" />}
+                {connectsRight && <span className="path-link right" />}
+                <span className="path-node" />
+              </>
+            )}
             {number !== null && <span className="number">{number}</span>}
             {isHint && <span className="hint-dot" />}
           </button>
