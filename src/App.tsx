@@ -111,6 +111,14 @@ export default function App() {
     return map;
   }, [activePath]);
 
+  const indexMap = useMemo(() => {
+    const map = new Map<string, number>();
+    activePath.forEach((cell, index) => {
+      map.set(cellKey(cell), index);
+    });
+    return map;
+  }, [activePath]);
+
   const solved = useMemo(() => isSolved(player.path, puzzle), [player.path, puzzle]);
 
   useEffect(() => {
@@ -249,16 +257,24 @@ export default function App() {
         const key = cellKey(cell);
         const number = puzzle.waypointMap.get(key) ?? null;
         const occupied = occupancy.has(key);
+        const index = indexMap.get(key);
+        const progress = index !== undefined && activePath.length > 1
+          ? index / (activePath.length - 1)
+          : 0;
         const isHint = hintCells.has(key);
         const highlight = highlightNumber !== null && number === highlightNumber;
+        const isHead = index === activePath.length - 1 && activePath.length > 0;
+        const isTail = index === 0 && activePath.length > 0;
 
         cells.push(
           <button
             key={key}
             type="button"
-            className={`cell ${number !== null ? "endpoint" : ""} ${occupied ? "filled" : ""} ${highlight ? "highlight" : ""}`}
+            className={`cell ${number !== null ? "endpoint" : ""} ${occupied ? "filled" : ""} ${highlight ? "highlight" : ""} ${isHead ? "head" : ""} ${isTail ? "tail" : ""}`}
             style={{
-              background: occupied ? "linear-gradient(135deg, #ffb347, #ff5c5c)" : undefined
+              background: occupied
+                ? `linear-gradient(135deg, hsl(28 90% ${45 + progress * 20}%), hsl(6 85% ${42 + progress * 20}%))`
+                : undefined
             }}
             data-cell="true"
             data-row={row}
